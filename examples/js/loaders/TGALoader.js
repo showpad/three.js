@@ -22,6 +22,7 @@ THREE.TGALoader.prototype = {
 
 		var loader = new THREE.FileLoader( this.manager );
 		loader.setResponseType( 'arraybuffer' );
+		loader.setPath( this.path );
 
 		loader.load( url, function ( buffer ) {
 
@@ -37,6 +38,13 @@ THREE.TGALoader.prototype = {
 		}, onProgress, onError );
 
 		return texture;
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
 
 	},
 

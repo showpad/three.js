@@ -1489,7 +1489,8 @@ THREE.ColladaLoader.prototype = {
 
 				if ( image !== null ) {
 
-					var texture = textureLoader.load( image );
+					var isTGA = image.search( /\.(tga|TGA)$/ ) > 0;
+					var texture = isTGA ? tgaLoader.load( image ) : textureLoader.load( image );
 
 					var extra = textureObject.extra;
 
@@ -3662,6 +3663,8 @@ THREE.ColladaLoader.prototype = {
 		var asset = parseAsset( getElementsByTagName( collada, 'asset' )[ 0 ] );
 		var textureLoader = new THREE.TextureLoader( this.manager );
 		textureLoader.setPath( path ).setCrossOrigin( this.crossOrigin );
+		var tgaLoader = new THREE.TGALoader( this.manager );
+		tgaLoader.setPath( path );
 
 		//
 
