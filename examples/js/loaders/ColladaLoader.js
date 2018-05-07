@@ -1489,7 +1489,18 @@ THREE.ColladaLoader.prototype = {
 
 				if ( image !== null ) {
 
-					var texture = textureLoader.load( image );
+					var loader = textureLoader;
+
+					var isTGA = image.search( /\.(tga|TGA)$/ ) > 0;
+					if ( isTGA ) {
+						if ( tgaLoader !== null ) {
+							loader = tgaLoader;
+						} else {
+							console.warn( 'THREE.ColladaLoader: TGA image defined but THREE.TGALoader not found.', image);
+						}
+					} 
+
+					var texture = loader.load( image );
 
 					var extra = textureObject.extra;
 
@@ -3662,7 +3673,13 @@ THREE.ColladaLoader.prototype = {
 		var asset = parseAsset( getElementsByTagName( collada, 'asset' )[ 0 ] );
 		var textureLoader = new THREE.TextureLoader( this.manager );
 		textureLoader.setPath( path ).setCrossOrigin( this.crossOrigin );
-
+		
+		var tgaLoader = null;
+		if ( THREE.TGALoader ) {
+			tgaLoader = new THREE.TGALoader( this.manager );
+			tgaLoader.setPath( path );
+		}
+		
 		//
 
 		var animations = [];
