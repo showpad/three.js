@@ -265,7 +265,11 @@ Object.assign( FileLoader.prototype, {
 
 		}
 
-		scope.manager.itemStart( url );
+		var cancelLoading = function() {
+			request.abort();
+		};
+
+		scope.manager.itemStart( url, cancelLoading );
 
 		return request;
 

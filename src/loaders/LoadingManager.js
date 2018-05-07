@@ -10,13 +10,14 @@ function LoadingManager( onLoad, onProgress, onError ) {
 	var itemsLoaded = 0;
 	var itemsTotal = 0;
 	var urlModifier = undefined;
+	var loading = {};
 
 	this.onStart = undefined;
 	this.onLoad = onLoad;
 	this.onProgress = onProgress;
 	this.onError = onError;
 
-	this.itemStart = function ( url ) {
+	this.itemStart = function ( url, cancelLoading ) {
 
 		itemsTotal ++;
 
@@ -30,6 +31,10 @@ function LoadingManager( onLoad, onProgress, onError ) {
 
 		}
 
+		loading[ url ] = {
+			cancel: cancelLoading
+		}
+
 		isLoading = true;
 
 	};
@@ -37,6 +42,8 @@ function LoadingManager( onLoad, onProgress, onError ) {
 	this.itemEnd = function ( url ) {
 
 		itemsLoaded ++;
+
+		delete loading[ url ];
 
 		if ( scope.onProgress !== undefined ) {
 
@@ -59,6 +66,8 @@ function LoadingManager( onLoad, onProgress, onError ) {
 	};
 
 	this.itemError = function ( url ) {
+
+		delete loading[ url ];
 
 		if ( scope.onError !== undefined ) {
 
@@ -87,6 +96,14 @@ function LoadingManager( onLoad, onProgress, onError ) {
 
 	};
 
+	this.cancelLoading = function() {
+		for (var url in loading) {
+			if (typeof loading[url].cancel === 'function') {
+				loading[url].cancel();
+			}
+		}
+		loading = {};
+	};
 }
 
 var DefaultLoadingManager = new LoadingManager();
