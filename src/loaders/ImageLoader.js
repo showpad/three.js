@@ -46,7 +46,7 @@ Object.assign( ImageLoader.prototype, {
 
 		var image = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'img' );
 
-		image.addEventListener( 'load', function () {
+		var imageLoad = function () {
 
 			Cache.add( url, this );
 
@@ -54,7 +54,9 @@ Object.assign( ImageLoader.prototype, {
 
 			scope.manager.itemEnd( url );
 
-		}, false );
+		};
+
+		image.addEventListener( 'load', imageLoad, false );
 
 		/*
 		image.addEventListener( 'progress', function ( event ) {
@@ -64,14 +66,16 @@ Object.assign( ImageLoader.prototype, {
 		}, false );
 		*/
 
-		image.addEventListener( 'error', function ( event ) {
+		var imageError = function ( event ) {
 
 			if ( onError ) onError( event );
 
 			scope.manager.itemEnd( url );
 			scope.manager.itemError( url );
 
-		}, false );
+		};
+
+		image.addEventListener( 'error', imageError, false );
 
 		if ( url.substr( 0, 5 ) !== 'data:' ) {
 
@@ -79,7 +83,13 @@ Object.assign( ImageLoader.prototype, {
 
 		}
 
-		scope.manager.itemStart( url );
+		var cancelLoading = function() {
+			image.removeEventListener( 'load', imageLoad );
+			image.removeEventListener( 'error', imageError );
+			image.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+		}
+
+		scope.manager.itemStart( url, cancelLoading );
 
 		image.src = url;
 
