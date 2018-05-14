@@ -29658,7 +29658,7 @@ CircleBufferGeometry.prototype.constructor = CircleBufferGeometry;
 
 
 
-var Geometries = Object.freeze({
+var Geometries = /*#__PURE__*/Object.freeze({
 	WireframeGeometry: WireframeGeometry,
 	ParametricGeometry: ParametricGeometry,
 	ParametricBufferGeometry: ParametricBufferGeometry,
@@ -30428,7 +30428,7 @@ LineDashedMaterial.prototype.copy = function ( source ) {
 
 
 
-var Materials = Object.freeze({
+var Materials = /*#__PURE__*/Object.freeze({
 	ShadowMaterial: ShadowMaterial,
 	SpriteMaterial: SpriteMaterial,
 	RawShaderMaterial: RawShaderMaterial,
@@ -30504,13 +30504,14 @@ function LoadingManager( onLoad, onProgress, onError ) {
 	var itemsLoaded = 0;
 	var itemsTotal = 0;
 	var urlModifier = undefined;
+	var loading = {};
 
 	this.onStart = undefined;
 	this.onLoad = onLoad;
 	this.onProgress = onProgress;
 	this.onError = onError;
 
-	this.itemStart = function ( url ) {
+	this.itemStart = function ( url, cancelLoading ) {
 
 		itemsTotal ++;
 
@@ -30524,6 +30525,10 @@ function LoadingManager( onLoad, onProgress, onError ) {
 
 		}
 
+		loading[ url ] = {
+			cancel: cancelLoading
+		};
+
 		isLoading = true;
 
 	};
@@ -30531,6 +30536,8 @@ function LoadingManager( onLoad, onProgress, onError ) {
 	this.itemEnd = function ( url ) {
 
 		itemsLoaded ++;
+
+		delete loading[ url ];
 
 		if ( scope.onProgress !== undefined ) {
 
@@ -30553,6 +30560,8 @@ function LoadingManager( onLoad, onProgress, onError ) {
 	};
 
 	this.itemError = function ( url ) {
+
+		delete loading[ url ];
 
 		if ( scope.onError !== undefined ) {
 
@@ -30581,6 +30590,14 @@ function LoadingManager( onLoad, onProgress, onError ) {
 
 	};
 
+	this.cancelLoading = function() {
+		for (var url in loading) {
+			if (typeof loading[url].cancel === 'function') {
+				loading[url].cancel();
+			}
+		}
+		loading = {};
+	};
 }
 
 var DefaultLoadingManager = new LoadingManager();
@@ -30849,7 +30866,11 @@ Object.assign( FileLoader.prototype, {
 
 		}
 
-		scope.manager.itemStart( url );
+		var cancelLoading = function() {
+			request.abort();
+		};
+
+		scope.manager.itemStart( url, cancelLoading );
 
 		return request;
 
@@ -31118,6 +31139,7 @@ Object.assign( DataTextureLoader.prototype, {
  * @author mrdoob / http://mrdoob.com/
  */
 
+
 function ImageLoader( manager ) {
 
 	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
@@ -31158,7 +31180,7 @@ Object.assign( ImageLoader.prototype, {
 
 		var image = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'img' );
 
-		image.addEventListener( 'load', function () {
+		var imageLoad = function () {
 
 			Cache.add( url, this );
 
@@ -31166,7 +31188,9 @@ Object.assign( ImageLoader.prototype, {
 
 			scope.manager.itemEnd( url );
 
-		}, false );
+		};
+
+		image.addEventListener( 'load', imageLoad, false );
 
 		/*
 		image.addEventListener( 'progress', function ( event ) {
@@ -31176,14 +31200,16 @@ Object.assign( ImageLoader.prototype, {
 		}, false );
 		*/
 
-		image.addEventListener( 'error', function ( event ) {
+		var imageError = function ( event ) {
 
 			if ( onError ) onError( event );
 
 			scope.manager.itemEnd( url );
 			scope.manager.itemError( url );
 
-		}, false );
+		};
+
+		image.addEventListener( 'error', imageError, false );
 
 		if ( url.substr( 0, 5 ) !== 'data:' ) {
 
@@ -31191,7 +31217,13 @@ Object.assign( ImageLoader.prototype, {
 
 		}
 
-		scope.manager.itemStart( url );
+		var cancelLoading = function() {
+			image.removeEventListener( 'load', imageLoad );
+			image.removeEventListener( 'error', imageError );
+			image.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+		};
+
+		scope.manager.itemStart( url, cancelLoading );
 
 		image.src = url;
 
@@ -31218,6 +31250,7 @@ Object.assign( ImageLoader.prototype, {
 /**
  * @author mrdoob / http://mrdoob.com/
  */
+
 
 function CubeTextureLoader( manager ) {
 
@@ -31288,6 +31321,7 @@ Object.assign( CubeTextureLoader.prototype, {
 /**
  * @author mrdoob / http://mrdoob.com/
  */
+
 
 function TextureLoader( manager ) {
 
@@ -32009,9 +32043,7 @@ function CubicPoly() {
 //
 
 var tmp = new Vector3();
-var px = new CubicPoly();
-var py = new CubicPoly();
-var pz = new CubicPoly();
+var px = new CubicPoly(), py = new CubicPoly(), pz = new CubicPoly();
 
 function CatmullRomCurve3( points, closed, curveType, tension ) {
 
@@ -32796,7 +32828,7 @@ SplineCurve.prototype.fromJSON = function ( json ) {
 
 
 
-var Curves = Object.freeze({
+var Curves = /*#__PURE__*/Object.freeze({
 	ArcCurve: ArcCurve,
 	CatmullRomCurve3: CatmullRomCurve3,
 	CubicBezierCurve: CubicBezierCurve,
@@ -35216,7 +35248,8 @@ Object.assign( AnimationClip, {
 
 			'name': clip.name,
 			'duration': clip.duration,
-			'tracks': tracks
+			'tracks': tracks,
+			'uuid': clip.uuid
 
 		};
 
@@ -37099,7 +37132,11 @@ Object.assign( ObjectLoader.prototype, {
 
 		for ( var i = 0; i < json.length; i ++ ) {
 
-			var clip = AnimationClip.parse( json[ i ] );
+			var data = json[ i ];
+
+			var clip = AnimationClip.parse( data );
+
+			if ( data.uuid !== undefined ) clip.uuid = data.uuid;
 
 			animations.push( clip );
 
@@ -37539,6 +37576,7 @@ var TEXTURE_FILTER = {
  * @author thespite / http://clicktorelease.com/
  */
 
+
 function ImageBitmapLoader( manager ) {
 
 	if ( typeof createImageBitmap === 'undefined' ) {
@@ -37921,6 +37959,7 @@ Object.assign( ShapePath.prototype, {
  * @author zz85 / http://www.lab4games.net/zz85/blog
  * @author mrdoob / http://mrdoob.com/
  */
+
 
 function Font( data ) {
 
@@ -38541,6 +38580,17 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 		this.hasPlaybackControl = false;
 		this.sourceType = 'audioNode';
 		this.source = audioNode;
+		this.connect();
+
+		return this;
+
+	},
+
+	setMediaElementSource: function ( mediaElement ) {
+
+		this.hasPlaybackControl = false;
+		this.sourceType = 'mediaNode';
+		this.source = this.context.createMediaElementSource( mediaElement );
 		this.connect();
 
 		return this;
@@ -43952,8 +44002,7 @@ PlaneHelper.prototype.updateMatrixWorld = function ( force ) {
  *  headWidth - Number
  */
 
-var lineGeometry;
-var coneGeometry;
+var lineGeometry, coneGeometry;
 
 function ArrowHelper( dir, origin, length, color, headLength, headWidth ) {
 

@@ -24,7 +24,7 @@ THREE.ColladaLoader.prototype = {
 		var loader = new THREE.FileLoader( scope.manager );
 		loader.load( url, function ( text ) {
 
-			onLoad( scope.parse( text, path ) );
+			onLoad( scope.parse( text, path, onError ) );
 
 		}, onProgress, onError );
 
@@ -52,7 +52,7 @@ THREE.ColladaLoader.prototype = {
 
 	},
 
-	parse: function ( text, path ) {
+	parse: function ( text, path, onError ) {
 
 		function getElementsByTagName( xml, name ) {
 
@@ -3664,6 +3664,11 @@ THREE.ColladaLoader.prototype = {
 		var xml = new DOMParser().parseFromString( text, 'application/xml' );
 
 		var collada = getElementsByTagName( xml, 'COLLADA' )[ 0 ];
+
+		if (!collada) {
+			console.error( 'THREE.ColladaLoader: Unable to find COLLADA tag.');
+			return onError();
+		}
 
 		// metadata
 

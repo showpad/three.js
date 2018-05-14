@@ -1,6 +1,6 @@
 {
-  "name": "three",
-  "version": "0.92.0",
+  "name": "@showpad/three",
+  "version": "0.92.0-sp.beta-3",
   "description": "JavaScript 3D library",
   "main": "build/three.js",
   "repository": "mrdoob/three.js",
